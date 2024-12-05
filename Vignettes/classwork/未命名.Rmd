@@ -1,0 +1,32 @@
+---
+title: "Untitled"
+author: "sa24204139"
+date: "2024-10-14"
+output: html_document
+---
+
+```{r}
+set.seed(123)
+d1 <- c(-2.961, 0.478, -0.391, -0.869, -0.460, -0.937, 0.779, -1.409, 0.027, -1.569)
+d2 <- c(1.608, 1.009, 0.878, 1.600, -0.263, 0.680, 2.280, 2.390, 1.793, 8.091, 1.468)
+mean_diff <- mean(d2) - mean(d1)
+bootstrap_diff <- function(data1, data2, R = 10000) {
+  n1 <- length(data1)
+  n2 <- length(data2)
+  boot_diff <- numeric(R)
+  for (i in 1:R) {
+    boot_sample1 <- data1[sample.int(n1, n1, replace = TRUE)]
+    boot_sample2 <- data2[sample.int(n2, n2, replace = TRUE)]
+    boot_diff[i] <- mean(boot_sample2) - mean(boot_sample1)
+  }
+  return(boot_diff)
+}
+bootstrap_results <- bootstrap_diff(d1, d2)
+bootstrap_se <- sd(bootstrap_results)
+cat(" Mean Difference:", mean_diff)
+cat("Bootstrap Standard Error:", bootstrap_se)
+sample_se_d1 <- sd(d1) / sqrt(length(d1))
+sample_se_d2 <- sd(d2) / sqrt(length(d2))
+sample_se <- sqrt(sample_se_d1^2 + sample_se_d2^2)
+cat("Sample Standard Error:", sample_se)
+```

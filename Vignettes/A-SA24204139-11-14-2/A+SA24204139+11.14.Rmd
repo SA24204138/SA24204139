@@ -1,0 +1,117 @@
+---
+title: "Untitled"
+author: "sa24204139"
+date: "2024-11-13"
+output: html_document
+---
+11.7
+```{r}
+install.packages("lpSolve")
+library(lpSolve)
+objective <- c(4, 2, 9)
+constraints <- matrix(c(2, 1, 1,1, -1, 3), 
+                      nrow = 2, byrow = TRUE)
+rhs <- c(2, 3)
+direction <- c("<=", "<=")
+solution <- lp("min", objective, constraints, direction, rhs, compute.sens = TRUE)
+cat("Objective value (minimized):", solution$objval, "\n")
+cat("Values of x, y, and z:", solution$solution, "\n")
+```
+P204
+ex.3
+```{r}
+data(mtcars)
+formulas <- list(
+  mpg ~ disp,
+  mpg ~ I(1 / disp),
+  mpg ~ disp + wt,
+  mpg ~ I(1 / disp) + wt
+)
+for (f in formulas) {
+  model <- lm(f, data = mtcars)
+  print(summary(model))
+}
+models <- lapply(formulas, function(f) lm(f, data = mtcars))
+lapply(models, summary)
+
+```
+ex.4
+```{r}
+data(mtcars)
+bootstrap_sample <- function() {
+  rows <- sample(1:nrow(mtcars), replace = TRUE)
+  mtcars[rows, ]
+}
+bootstraps <- lapply(1:10, function(i) bootstrap_sample())
+fit_model <- function(data) {
+  lm(mpg ~ disp, data = data)
+}
+models_for <- list()
+for (i in 1:length(bootstraps)) {
+  models_for[[i]] <- fit_model(bootstraps[[i]])
+}
+models_lapply <- lapply(bootstraps, fit_model)
+lapply(models_for, summary)
+lapply(models_lapply, summary)
+```
+ex.5
+```{r}
+rsq <- function(mod) summary(mod)$r.squared
+rsquared_for <- sapply(models_for, rsq)
+rsquared_lapply <- sapply(models_lapply, rsq)
+print("R-squared values using for loop:")
+print(rsquared_for)
+print("R-squared values using lapply():")
+print(rsquared_lapply)
+```
+P213
+ex.3
+```{r}
+trials <- replicate(
+  100,
+  t.test(rpois(10, 10), rpois(7, 10)),
+  simplify = FALSE
+)
+p_values <- sapply(trials, `[[`, "p.value")
+print(p_values)
+```
+ex.6
+```{r}
+parallel_lapply <- function(FUN, ..., simplify = TRUE) {
+  results <- Map(FUN, ...)
+  vapply(results, identity, FUN.VALUE = simplify)
+}
+```
+P365 ex.4
+```{r}
+fast_chisq_test <- function(x, y) {
+  if (!is.numeric(x) || !is.numeric(y) || anyNA(x) || anyNA(y)) {
+    stop("Inputs must be two numeric vectors with no missing values.")
+  }
+  observed <- table(x, y)
+  row_sums <- rowSums(observed)
+  col_sums <- colSums(observed)
+  total <- sum(observed)
+  expected <- outer(row_sums, col_sums) / total
+  chi_square_stat <- sum((observed - expected)^2 / expected)
+  return(chi_square_stat)
+}
+```
+ex.5
+```{r}
+fast_table <- function(x, y) {
+  if (!is.integer(x) || !is.integer(y) || anyNA(x) || anyNA(y)) {
+    stop("FALSE")
+  }
+  x_levels <- sort(unique(x))
+  y_levels <- sort(unique(y))
+  count_matrix <- matrix(0, nrow = length(x_levels), ncol = length(y_levels),
+                         dimnames = list(x_levels, y_levels))
+  
+  for (i in seq_along(x)) {
+    count_matrix[as.character(x[i]), as.character(y[i])] <- count_matrix[as.character(x[i]), as.character(y[i])] + 1
+  }
+  
+  return(count_matrix)
+}
+```

@@ -1,0 +1,63 @@
+---
+title: "Untitled"
+author: "sa24204139"
+date: "2024-11-23"
+output: html_document
+---
+
+```{r}
+a <- 2    
+b <- 2   
+n <- 10  
+iterations <- 10000  
+x <- numeric(iterations)
+y <- numeric(iterations)
+y[1] <- 0.5  
+for (i in 2:iterations) {
+  x[i] <- rbinom(1, size = n, prob = y[i - 1])
+  y[i] <- rbeta(1, shape1 = x[i] + a, shape2 = n - x[i] + b)
+}
+plot(x, y, pch = 20, col = rgb(0, 0, 1, 0.5), xlab = "x", ylab = "y",
+     main = "Gibbs Sampling for f(x, y)")
+gibbs_sampler <- function(iterations, n, a, b) {
+  x <- numeric(iterations)
+  y <- numeric(iterations)
+  y[1] <- 0.5  
+  for (i in 2:iterations) {
+    x[i] <- rbinom(1, size = n, prob = y[i - 1])
+    y[i] <- rbeta(1, shape1 = x[i] + a, shape2 = n - x[i] + b)
+  }
+  
+  return(data.frame(x = x, y = y))
+}
+set.seed(123)
+iterations <- 10000
+n <- 10
+a <- 2
+b <- 2
+samples <- gibbs_sampler(iterations, n, a, b)
+r_binomial <- rbinom(iterations, size = n, prob = 0.5)
+r_beta <- rbeta(iterations, shape1 = mean(r_binomial) + a, shape2 = n - mean(r_binomial) + b)
+qqplot(samples$y, r_beta, main = "QQ Plot: Gibbs Sampler vs R Beta Sampling", 
+       xlab = "Gibbs Sampler Quantiles", ylab = "R Beta Sampling Quantiles")
+abline(0, 1, col = "red")
+library(microbenchmark)
+benchmark_results <- microbenchmark(
+  gibbs = gibbs_sampler(iterations, n, a, b),
+  r_functions = {
+    r_binomial <- rbinom(iterations, size = n, prob = 0.5)
+    r_beta <- rbeta(iterations, shape1 = mean(r_binomial) + a, shape2 = n - mean(r_binomial) + b)
+  },
+  times = 10
+)
+
+print(benchmark_results)
+```
+comment
+	1.qqplot对比：
+	通过 qqplot 对比 Gibbs 采样器生成的样本与直接使用 R 自带函数生成的 Beta 分布样本，图中点接近于对角线，所以两组样本的分布接近。
+	2.运行时间对比
+	Gibbs 采样通常会比直接使用 R 函数慢，因为需要在循环中逐步生成样本，而直接使用 R 函数可以一次性生成。
+  3.评价
+  Gibbs采样适用性广，但运行时间较长。
+	

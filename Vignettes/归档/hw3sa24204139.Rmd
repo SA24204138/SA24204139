@@ -1,0 +1,89 @@
+---
+title: "hw3"
+author: "王先觉sa24204139"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+6.6 Estimate the 0.025, 0.05, 0.95, and 0.975 quantiles of the skewness \sqrt{b_1} under normality by a Monte Carlo experiment. Compute the standard error of the estimates from (2.14) using the normal approximation for the density (with exact variance formula). Compare the estimated quantiles with the quantiles of the large sample approximation \sqrt{b_1} \approx N(0, 6/n).
+
+```{r}
+n <- 10000  
+B <- 10000
+quantiles <- c(0.025, 0.05, 0.95, 0.975)
+skewness_values <- numeric(B)
+for (i in 1:B) {
+  sample_data <- rnorm(n)
+  sample_sd <- sd(sample_data)
+    skewness_values[i] <- mean((sample_data - mean(sample_data))^3) / sample_sd^3
+    }
+estimated_quantiles <- quantile(skewness_values, quantiles)
+normal_quantiles <- qnorm(quantiles, mean = 0, sd = sqrt(6/n))
+
+# 输出结果
+estimated_quantiles
+normal_quantiles
+standard_errors<- function(q) {
+  se<-sqrt((6/n) / (2 * q))
+  return(se)
+}
+q<-quantiles
+standard_errors(q)
+```
+
+6.B .基于 Pearson 积矩相关系数 $\rho$ 、Spearman 等级相关系数 $\rho_s$ 或 Kendall 系数 $\tau$的关联性检验已在 cor.test 函数中实现。通过实验证明，当样本分布为双变量正态分布时，基于$\rho_s$或 $\tau$ 的非参数检验的功效低于基于相关系数的检验。 找到一个替代示例（一个使 X 和 Y 相关的双变量分布），该示例中至少一种非参数检验在对该替代分布进行检验时的功效优于基于相关系数的检验。
+
+```{r}
+# 设置参数
+set.seed(1234)
+n <- 100
+B <- 10000
+alpha <- 0.05
+rejections_pn <- numeric(B)
+rejections_sn <- numeric(B)
+rejections_kn <- numeric(B)
+for (i in 1:B) {
+  X <- rnorm(n)
+  Y <- X^2 + rnorm(n, sd = 0.1)
+  
+  # Pearson相关性检验
+  pearson_test <- cor.test(X, Y, method = "pearson")
+  rejections_pn[i] <- ifelse(pearson_test$p.value < alpha, 1, 0)
+  
+  # Spearman相关性检验
+  spearman_test <- cor.test(X, Y, method = "spearman")
+  rejections_sn[i] <- ifelse(spearman_test$p.value < alpha, 1, 0)
+  
+  # Kendall相关性检验
+  kendall_test <- cor.test(X, Y, method = "kendall")
+  rejections_kn[i] <- ifelse(kendall_test$p.value < alpha, 1, 0)
+}
+
+# 计算功效
+power_pn <- mean(rejections_pn)
+power_sn <- mean(rejections_sn)
+power_kn <- mean(rejections_kn)
+
+cat("非正态分布下的功效比较 (Y = X^2 + 噪声):\n")
+cat("Pearson检验功效:", power_pn, "\n")
+cat("Spearman检验功效:", power_sn, "\n")
+cat("Kendall检验功效:", power_kn, "\n")
+```
+
+## Question
+
+If we obtain the powers for two methods under a particular simulation setting with 10000 experiments;say, 0.651 for one method and 0.676 for another method. Can we say the powers are different at 0.05 level?
+
+• What is the corresponding hypothesis test problem?
+
+• Which test can we use? Z-test, two-sample t-test, paired-t test or McNemar test? Why?
+
+• Please provide the least necessary information for hypothesis testing.
+
+## Answer
+
+• the corresponding hypothesis test problem should be : $H_0:power_1=power_2$ $H_1:power_1\neq power_2$
+
+• since Z-test is only applicable to normal distribution with known variance,we can not use it;we should use paired-t test or McNemar test because the date is paired.
+
+• we need the powers of two different methods in 10000 experiments and the mean and variance of their difference.

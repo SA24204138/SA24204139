@@ -1,0 +1,84 @@
+---
+title: "hw7"
+author: "sa24204139"
+date: "2024-11-01"
+output: html_document
+---
+9.3
+```{r}
+library("coda")
+target_density <- function(x) {
+  return(1 / (pi * (1 + x^2)))
+}
+metropolis_hastings <- function(iterations, start_value, proposal_df) {
+  samples <- numeric(iterations)
+  samples[1] <- start_value
+  
+  for (i in 2:iterations) {
+    proposal <- samples[i - 1] + rt(1, df = proposal_df)
+    acceptance_ratio <- target_density(proposal) / target_density(samples[i - 1])
+    if (runif(1) < acceptance_ratio) {
+      samples[i] <- proposal
+    } else {
+      samples[i] <- samples[i - 1]
+    }
+  }
+  
+  return(samples)
+}
+set.seed(42)
+iterations <- 10000
+start_value <- 0
+proposal_df <- 1
+num_chains <- 3 
+chains <- lapply(1:num_chains, function(i) metropolis_hastings(iterations, start_value, proposal_df))
+mcmc_chains <- mcmc.list(lapply(chains, as.mcmc))
+gelman_diag <- gelman.diag(mcmc_chains)
+print(gelman_diag)
+if (all(gelman_diag$psrf < 1.2)) {
+  cat("Chains have approximately converged ( R_hat < 1.2).\n")
+} else {
+  cat("Chains have not yet converged.\n")
+}
+samples_burned <- unlist(lapply(chains, function(chain) chain[-(1:1000)]))
+sample_deciles <- quantile(samples_burned, probs = seq(0.1, 0.9, by = 0.1))
+theoretical_deciles <- qcauchy(seq(0.1, 0.9, by = 0.1))
+decile_comparison <- data.frame(
+  Decile = seq(0.1, 0.9, by = 0.1),
+  Sample_Deciles = sample_deciles,
+  Theoretical_Deciles = theoretical_deciles
+)
+print(decile_comparison)
+plot(sample_deciles, theoretical_deciles, main = "Sample vs Theoretical Deciles",
+     xlab = "Sample Deciles", ylab = "Theoretical Deciles", pch = 19)
+abline(0, 1, col = "red") 
+```
+9.8
+```{r}
+library(coda)
+a <- 2
+b <- 2
+n <- 10
+num_samples <- 10000  
+num_chains <- 3       
+chains <- vector("list", num_chains)
+for (chain in 1:num_chains) {
+  x <- 0
+  y <- 0.5
+  samples <- matrix(0, nrow = num_samples, ncol = 2)
+  
+  for (i in 1:num_samples) {
+    x <- rbinom(1, n, y)
+    y <- rbeta(1, x + a, n - x + b)
+    samples[i, ] <- c(x, y)
+  }
+  chains[[chain]] <- as.mcmc(samples)
+}
+gelman_diag <- gelman.diag(mcmc.list(chains))
+print(gelman_diag)
+if (all(gelman_diag$psrf < 1.2)) {
+  cat("Chains have approximately converged.\n")
+} else {
+  cat("Chains have not yet converged.\n")
+}
+```

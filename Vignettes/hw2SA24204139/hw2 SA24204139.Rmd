@@ -1,0 +1,147 @@
+---
+title: "hw3 SA24204139"
+author: "王先觉sa24204139"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+5.4 Write a function to compute a Monte Carlo estimate of the Beta(3,3) cdf, and use the function to estimate F(x) for x = 0.1, 0.2,···, 0.9. Compare the estimates with the values returned by the pbeta function in R.
+
+```{r}
+set.seed(12345)
+m<- 1e5
+u<-runif(m)
+x <- seq(.1, .9, length = 9)
+cdf <- numeric(length(x))
+for (i in 1:length(x)) {
+cdf[i] <- mean(30*x[i]*(u * x[i])^2*(1-u * x[i])^2)
+}
+phi = pbeta(x,shape1=3,shape2=3)
+print(round(rbind(x,cdf,phi),4))
+```
+
+5.9 {The Rayleigh density [156, (18.76)] is} $$
+f(x) = \frac{x}{\sigma^2} e^{-x^2 / (2\sigma^2)}, \quad x \geq 0, \sigma > 0.
+$$
+
+Implement a function to generate samples from a Rayleigh(\\sigma) distribution, using antithetic variables. What is the percent reduction in variance of } \frac{X + X'}{2} \\{ compared with independent } X_1, X_2 \\{?}
+
+```{r}
+n <- 10000
+sigma <- 1
+rayleigh_sample <- function(n, sigma) {
+  u <- runif(n / 2)
+  x <- sigma * sqrt(-2 * log(u))  
+  x_an <- sigma * sqrt(-2 * log(1 - u)) 
+ 
+}
+vr<- function(n, sigma) {
+  x1 <- rayleigh_sample(n, sigma)
+  x2 <- rayleigh_sample(n, sigma)
+  independent_mean <- (x1 + x2) / 2
+  vi <- var(independent_mean)
+  x_antithetic <- (x1 + rev(x1)) / 2
+  va <- var(x_antithetic)
+  percent_reduction <- 100 * (vi - va) / va
+  return(percent_reduction)
+}
+
+result <- vr(n, sigma)
+print(result)
+```
+
+5.13 {Find two importance functions } f_1 \\text{ and } f_2 \text{ that are supported on } (1, \infty) \text{ and are ‘close’ to} $$
+g(x) = \frac{x^2}{\sqrt{2\pi}} e^{-x^2/2}, \quad x > 1.
+$$ \text{Which of your two importance functions should produce the smaller variance in estimating} $$
+\int_1^\infty \frac{x^2}{\sqrt{2\pi}} e^{-x^2/2} \, dx
+$$ \text{by importance sampling? Explain.}
+
+```{r}
+g <- function(x) { (x^2 / sqrt(2 * pi)) * exp(-x^2 / 2)}
+f1 <- function(x) {dexp(x - 1, rate = 1)  }
+f2 <- function(x) { dnorm(x, mean = 2, sd = 1)}
+sample_f1 <- function(n) { rexp(n, rate = 1) + 1  }
+sample_f2 <- function(n) {rnorm(n, mean = 2, sd = 1)  }
+importance_sampling <- function(n, f_sample, f_density, g) {
+  x <- f_sample(n) 
+  weights <- g(x) / f_density(x)  
+  estimate <- mean(weights) 
+  return(estimate)
+}
+n <- 10000
+estimate_f1 <- importance_sampling(n, sample_f1, f1, g)
+estimate_f2 <- importance_sampling(n, sample_f2, f2, g)
+cat("Estimate using f1: (shifted exponential)", estimate_f1, "\n")
+cat("Estimate using f2 (normal distribution):", estimate_f2, "\n")
+variance_comparison <- function(n, f_sample, f_density, g) {
+  x <- f_sample(n)
+  weights <- g(x) / f_density(x)
+  var(weights)  
+}
+
+# 比较方差
+var_f1 <- variance_comparison(n, sample_f1, f1, g)
+var_f2 <- variance_comparison(n, sample_f2, f2, g)
+cat("Variance using f1 (shifted exponential) :", var_f1, "\n")
+cat("Variance using f2(normal distribution):", var_f2, "\n")
+```
+
+Monte Carlo experiment:
+
+```         
+ For  n = 10^4, 2 \times 10^4, 4 \times 10^4, 6 \times 10^4, 8 \times 10^4 , apply the fast sorting algorithm to randomly permuted numbers of  1, \ldots, n .
+ Calculate computation time averaged over 100 simulations, denoted by  a_n .
+ Regress  a_n  on  t_n := n \log(n) , and graphically show the results (scatter plot and regression line).
+```
+
+```{r}
+
+# 定义快速排序函数
+quicksort <- function(arr) {
+  if (length(arr) <= 1) {
+    return(list(sorted = arr, steps = 0))  # 返回排序后的数组和步数
+  } else {
+    pivot <- arr[floor(length(arr) / 2)]  # 选择中间元素作为基准
+    left <- arr[arr < pivot]
+    middle <- arr[arr == pivot]
+    right <- arr[arr > pivot]
+    
+    # 计算步数
+    steps <- length(arr)  # 每次比较都算一步
+    left_result <- quicksort(left)
+    right_result <- quicksort(right)
+    
+    # 返回排序结果和总步数
+    return(list(sorted = c(left_result$sorted, middle, right_result$sorted), 
+                steps = steps + left_result$steps + right_result$steps))
+  }
+}
+
+# 定义n_values
+n_values <- c(1e4, 2e4, 4e4, 6e4, 8e4)
+
+# 记录每个数组的步数
+steps_record <- numeric(length(n_values))
+
+# 对每个n值进行处理
+for (i in seq_along(n_values)) {
+  n <- n_values[i]
+  random_array <- runif(n)  # 生成大小为n的随机数组
+  result <- quicksort(random_array)  # 排序并记录步数
+  steps_record[i] <- result$steps  # 记录步数
+}
+
+# 输出结果
+for (i in seq_along(n_values)) {
+  cat(sprintf("Size: %d, Steps: %d\n", n_values[i], steps_record[i]))
+}
+
+result1<-data.frame(n_values,steps_record)
+library(ggplot2)
+ggplot(result1, aes(x = n_values, y = steps_record)) +
+  geom_point() +  # 绘制散点图
+  geom_smooth(method = "lm", se = FALSE) +  # 添加回归线
+  labs(x = "n log(n)", y = "Computation Time", 
+       title = "Computation Time vs n log(n)") +
+  theme_minimal()
+```

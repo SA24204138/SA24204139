@@ -1,0 +1,121 @@
+---
+title: "hw5"
+author: "sa24204139"
+date: "2024-10-23"
+output: html_document
+---
+
+$7.8 \quad$ Refer to Exercise 7.7. Obtain the jackknife estimates of bias and standard error of $\hat\theta$
+
+```{r}
+rm=list(c())
+library(bootstrap)
+n <- nrow(scor)
+theta.jack <- numeric(n)
+#use a function to calculate thetahat
+theta <- function(x,i){
+  val=eigen(cov(x[i,]))$values
+  return(val[1]/sum(val))
+}
+theta.hat <- theta(scor,1:n)
+for(i in 1:n){
+  theta.jack[i] <- theta(scor,(1:n)[-i])
+}
+bias.jack <- (n-1)*(mean(theta.jack)-theta.hat)
+se.jack <- sqrt((n-1)*mean((theta.jack-theta.hat)^2))
+round(c(thetahat=theta.hat,bias.jack=bias.jack,
+se.jack=se.jack),4)
+```
+
+$7.10\quad$ In Example 7.18, leave-one-out (n-fold) cross validation was used to select the best fitting model. Repeat the analysis replacing the Log-Log model with a cubic polynomial model. Which of the four models is selected by the cross validation procedure? Which model is selected according to maximum adjusted $R^2$?
+
+```{r}
+library(DAAG)  
+library(boot)  
+data(ironslag)
+X <- ironslag$chemical
+Y <- ironslag$magnetic
+n <- length(Y)
+linear_model <- function(X, Y) { lm(Y ~ X) }
+quadratic_model <- function(X, Y) { lm(Y ~ poly(X, 2)) }
+cubic_model <- function(X, Y) { lm(Y ~ poly(X, 3)) }
+exponential_model <- function(X, Y) { lm(log(Y) ~ X) }
+loocv_error <- function(fit_model) {
+  errors <- rep(NA, n)
+  for (i in 1:n) {
+    fit <- fit_model(X[-i], Y[-i])
+    prediction <- predict(fit, newdata = data.frame(X = X[i]))
+    errors[i] <- (Y[i] - prediction)^2
+  }
+  return(mean(errors))
+}
+linear_loocv <- loocv_error(linear_model)
+quadratic_loocv <- loocv_error(quadratic_model)
+cubic_loocv <- loocv_error(cubic_model)
+exponential_loocv <- loocv_error(exponential_model)
+print(paste("Linear LOOCV Error:", linear_loocv))
+print(paste("Quadratic LOOCV Error:", quadratic_loocv))
+print(paste("Cubic LOOCV Error:", cubic_loocv))
+print(paste("Exponential LOOCV Error:", exponential_loocv))
+adj_r2 <- function(model) {
+  return(summary(model)$adj.r.squared)
+}
+
+linear_r2 <- adj_r2(lm(Y ~ X))
+quadratic_r2 <- adj_r2(lm(Y ~ poly(X, 2)))
+cubic_r2 <- adj_r2(lm(Y ~ poly(X, 3)))
+exponential_r2 <- adj_r2(lm(log(Y) ~ X))
+print(paste("Linear Adjusted R^2:", linear_r2))
+print(paste("Quadratic Adjusted R^2:", quadratic_r2))
+print(paste("Cubic Adjusted R^2:", cubic_r2))
+print(paste("Exponential Adjusted R^2:", exponential_r2))
+```
+$8.1\quad$ Implement the two-sample Cramér-von Mises test for equal distributions as a 
+permutation test. Apply the test to the data in Examples 8.1 and 8.2.
+```{r}
+set.seed(1234)
+library(cramer)
+x <- c(158, 171, 193, 199, 230, 243, 248, 248, 250, 267, 271, 316, 327, 329)
+y <- c(141, 148, 169, 181, 203, 213, 229, 244, 257, 260, 271, 309)
+test_stat <- cramer.test(x, y)$statistic
+perm_test <- function(x, y, num_perm = 1000) {
+  combined <- c(x, y)
+  n_x <- length(x)
+  perm_stats <- numeric(num_perm)
+  
+  for (i in 1:num_perm) {
+    permuted <- sample(combined)  
+    perm_x <- permuted[1:n_x]
+    perm_y <- permuted[(n_x + 1):length(combined)]
+    perm_stats[i] <- cramer.test(perm_x, perm_y)$statistic
+  }
+  p_value <- mean(perm_stats >= test_stat)
+  return(p_value)
+}
+p_value <- perm_test(x, y, num_perm = 1000)
+cat("Cramér-von Mises Test Statistic:", test_stat, "\n")
+cat("Permutation Test P-value:", p_value, "\n")
+```
+$8.2\quad$ Implement the bivariate Spearman rank correlation test for independence[255] as a permutation test. The Spearman rank correlation test statistic can be obtained from function cor with method = "spearman". Compare the achieved significance level of the permutation test with the p-value reported by cor.test on the same samples.
+```{r}
+rm=list(c())
+set.seed(22091)
+x <- rnorm(15)
+y <- rnorm(15)
+R <- 999 #number of replicate
+z <- c(x,y)#pooled sample
+K <- 1:30
+reps <- numeric(R)# storage for replicate
+cor0 <- cor(x,y,method="spearman")
+for(i in 1:R){
+  k <- sample(K,size=15,replace=FALSE)
+  x1 <- z[k]
+  y1 <- z[-k] #complement of x1
+  reps[i] <- cor(x1,y1,method="spearman")
+}
+p <- mean(c(cor0,reps)>=cor0)
+p
+cor.test(x,y)
+```
+
+the two p-value are close and we accept the null hypothesis.

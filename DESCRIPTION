@@ -1,0 +1,13 @@
+Package: SA24204139
+Type: Package
+Title: complete design
+Version: 1.0
+Date: 2024-11-26
+Author: wang xianjue
+Maintainer: wang xian jue <834403923@qq.com>
+Description: this function generates a complete factorial experimental design.
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.13)
+LinkingTo: Rcpp
+RoxygenNote: 7.3.2
+Encoding: UTF-8

@@ -1,0 +1,114 @@
+---
+title: "Untitled"
+author: "王先觉sa24204139"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+3.4
+
+The Rayleigh density [156, Ch. 18] is $$
+f(x) = \frac{x}{\sigma^2} e^{-\frac{x^2}{2\sigma^2}}, \quad x \geq 0, \sigma > 0.
+$$
+
+Develop an algorithm to generate random samples from a Rayleigh($\sigma$) distribution. Generate Rayleigh($\sigma$) samples for several choices of $\sigma > 0$ and check that the mode of the generated samples is close to the theoretical mode $\sigma$ (check the histogram).
+
+```{r}
+# 生成 Rayleigh 分布随机样本的函数
+rayleigh_random_samples <- function(sigma, size) {
+  U <- runif(size)  # 生成均匀分布的随机数
+  X <- sigma * sqrt(-2 * log(1 - U))  # 转换为 Rayleigh 分布
+  return(X)
+}
+# 设置参数
+sigma_values <- c(1, 2, 3)  # 不同的 sigma 值
+sample_size <- 1000  # 样本大小
+
+# 为不同的 sigma 值生成样本并绘制直方图
+par(mfrow = c(1, 3))  # 设置图形布局
+for (sigma in sigma_values) {
+  samples <- rayleigh_random_samples(sigma, sample_size)
+  
+  # 绘制直方图
+  hist(samples,breaks=50, prob=TRUE, main = paste("Rayleigh Distribution (σ =", sigma, ")"),
+       xlab = "Value", ylab = "Frequency", col = "lightblue")
+  
+  # 添加理论密度曲线
+  curve((x / sigma^2) * exp(-x^2 / (2 * sigma^2)), add = TRUE, col = "red", lwd = 2)
+}
+```
+
+3.11  Generate a random sample of size 1000 from a normal location mixture. The components of the mixture have $N(0,1)$ and $N(3,1)$ distributions with mixing probabilities $p_1$ and $p_2 = 1 - p_1$. Graph the histogram of the sample with density superimposed, for $p_1 = 0.75$. Repeat with different values for $p_1$ and observe whether the empirical distribution of the mixture appears to be bimodal. Make a conjecture about the values of $p_1$ that produce bimodal mixtures.
+
+```{r}
+# 设置参数
+set.seed(1234) 
+n <- 1000  
+mu1 <- 0  
+sigma1 <- 1  
+mu2 <- 3 
+sigma2 <- 1  
+p1 <- 0.75  
+
+# 根据p1和p2的比例生成每个分布的样本数量
+n1 <- round(n * p1)
+n2 <- n - n1
+
+# 生成样本
+sample1 <- rnorm(n1, mean = mu1, sd = sigma1)  
+sample2 <- rnorm(n2, mean = mu2, sd = sigma2)  
+
+# 合并样本
+mix <- c(sample1, sample2)
+
+# 绘制直方图并叠加密度曲线
+hist(mix, breaks= 50,probability = TRUE, col = "lightblue", 
+     main = paste("Normal Mixture Distribution (p1 =", p1, ")"), 
+     xlab = "Value", ylab = "Density")
+
+lines(density(mix), col = "red", lwd = 2)
+
+# 添加理论正态混合密度曲线
+curve(p1 * dnorm(x, mean = mu1, sd = sigma1) + (1 - p1) * dnorm(x, mean = mu2, sd = sigma2), 
+      col = "blue", lwd = 2, add = TRUE)
+```
+
+3.20  A compound Poisson process is a stochastic process $X(t), t \geq 0$ that can be represented as the random sum $X(t) = \sum_{i=1}^{N(t)} Y_i, t \geq 0$, where $\{N(t), t \geq 0\}$ is a Poisson process and $Y_1, Y_2, \dots$ are iid and independent of $\{N(t), t \geq 0\}$. Write a program to simulate a compound Poisson($\lambda$)–Gamma process ($Y$ has a Gamma distribution). Estimate the mean and the variance of $X(10)$ for several choices of the parameters and compare with the theoretical values. Hint: Show that $E[X(t)] = \lambda t E[Y_1]$ and $Var(X(t)) = \lambda t E[Y_1^2]$.
+
+```{r}
+# 设置参数
+set.seed(1234)  
+lambda <- 2    
+shape <- 3     
+rate <- 1      
+t <- 10        
+
+# 模拟泊松过程 N(t)
+N_t <- rpois(10000, lambda = lambda * t)  
+
+# 模拟复合泊松-伽马过程 X(t)
+X_t <- numeric(10000)  
+for (i in 1:10000) {
+  if (N_t[i] > 0) {
+    X_t[i] <- sum(rgamma(N_t[i], shape = shape, rate = rate))  
+  } else {
+    X_t[i] <- 0
+  }
+}
+
+# 估计均值和方差
+mean_X_t <- mean(X_t)  
+var_X_t <- var(X_t)    
+
+# 理论均值和方差
+theoretical_mean <- lambda * t * shape / rate
+theoretical_variance <- lambda * t * (shape / rate^2)
+
+# 输出结果
+cat("估计的 X(10) 均值: ", mean_X_t, "\n")
+cat("理论 X(10) 均值: ", theoretical_mean, "\n")
+cat("估计的 X(10) 方差: ", var_X_t, "\n")
+cat("理论 X(10) 方差: ", theoretical_variance, "\n")
+```

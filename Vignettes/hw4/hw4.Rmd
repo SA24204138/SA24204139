@@ -1,0 +1,102 @@
+---
+title: "hw4"
+author: "sa24204139"
+date: "2024-10-17"
+output: html_document
+---
+1
+```{r}
+set.seed(1234)
+N <- 1000
+null_proportion <- 950 / N  
+alt_proportion <- 1 - null_proportion  
+alpha <- 0.1
+m <- 10000
+FWER <- function(rejected, false_positives) {
+  mean(false_positives > 0)
+}
+FDR <- function(rejected, false_positives) {
+  if (rejected == 0) return(0)
+  mean(false_positives / rejected)
+}
+
+TPR <- function(rejected, true_positives) {
+  if (rejected == 0) return(0)
+  mean(true_positives / 50) 
+}
+results <- replicate(m, {
+  p_values <- c(runif(null_proportion * N), rbeta(alt_proportion * N, 0.1, 1))
+  bonferroni_p <- p.adjust(p_values, method = "bonferroni")
+  bonferroni_rejected <- sum(bonferroni_p < alpha)
+  bonferroni_false_positives <- sum(bonferroni_p[1:950] < alpha)
+  bonferroni_true_positives <- sum(bonferroni_p[951:N] < alpha)
+  bh_p <- p.adjust(p_values, method = "BH")
+  bh_rejected <- sum(bh_p < alpha)
+  bh_false_positives <- sum(bh_p[1:950] < alpha)
+  bh_true_positives <- sum(bh_p[951:N] < alpha)
+  
+  c(
+    # Bonferroni metrics
+    FWER(bonferroni_rejected, bonferroni_false_positives),
+    FDR(bonferroni_rejected, bonferroni_false_positives),
+    TPR(bonferroni_rejected, bonferroni_true_positives),
+    
+    # B-H metrics
+    FWER(bh_rejected, bh_false_positives),
+    FDR(bh_rejected, bh_false_positives),
+    TPR(bh_rejected, bh_true_positives)
+  )
+})
+results_mean <- colMeans(results)
+FWER_Bonf <- results_mean[1]
+FDR_Bonf <- results_mean[2]
+TPR_Bonf <- results_mean[3]
+
+FWER_BH <- results_mean[4]
+FDR_BH <- results_mean[5]
+TPR_BH <- results_mean[6]
+
+output_table <- data.frame(
+  Metric = c("FWER", "FDR", "TPR"),
+  Bonferroni = c(FWER_Bonf, FDR_Bonf, TPR_Bonf),
+  BH = c(FWER_BH, FDR_BH, TPR_BH)
+)
+
+print(output_table)
+```
+7.4.# 
+```{r}
+library(boot)
+failure_times <- c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
+neg_log_likelihood <- function(lambda, data) {
+  n <- length(data)
+  -n * log(lambda) + lambda * sum(data)
+}
+mle_lambda <- 1 / mean(failure_times)
+cat("MLE of hazard rate (lambda):", mle_lambda, "\n")
+lambda_mle_bootstrap <- function(data, indices) {
+  resampled_data <- data[indices]
+  return(1 / mean(resampled_data))
+}
+bootstrap_results <- boot(data = failure_times, statistic = lambda_mle_bootstrap, R = 1000)
+cat("Bootstrap estimate of bias:", mean(bootstrap_results$t) - mle_lambda, "\n")
+cat("Bootstrap estimate of standard error:", sd(bootstrap_results$t), "\n")
+plot(bootstrap_results)
+```
+7.5
+```{r}
+failure_times <- c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
+lambda_mle_bootstrap <- function(data, indices) {
+  resampled_data <- data[indices]
+  return(1 / mean(resampled_data))  # 返回1/λ，即平均故障时间
+}
+bootstrap_results <- boot(data = failure_times, statistic = lambda_mle_bootstrap, R = 1000)
+ci_norm <- boot.ci(bootstrap_results, type = "norm")
+ci_basic <- boot.ci(bootstrap_results, type = "basic")
+ci_perc <- boot.ci(bootstrap_results, type = "perc")
+ci_bca <- boot.ci(bootstrap_results, type = "bca")
+cat("Standard Normal Method CI:\n", ci_norm$normal, "\n")
+cat("Basic Method CI:\n", ci_basic$basic, "\n")
+cat("Percentile Method CI:\n", ci_perc$percent, "\n")
+cat("BCa Method CI:\n", ci_bca$bca, "\n")
+```
