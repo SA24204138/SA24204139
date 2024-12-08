@@ -9,9 +9,11 @@ complete.design(varlist, numbering = TRUE, size = 1)
 \arguments{
 \item{varlist}{A list where each element represents a factor.
 Each element can be:
-- A positive integer (representing the number of levels for a factor).
-- A vector (representing the specific levels of a factor).
-- A data frame (representing a complex factor with multiple columns).}
+\itemize{
+\item A positive integer (representing the number of levels for a factor).
+\item A vector (representing the specific levels of a factor).
+\item A data frame (representing a complex factor with multiple columns).
+}}
 
 \item{numbering}{Logical, whether to include experiment numbers (default = TRUE).}
 

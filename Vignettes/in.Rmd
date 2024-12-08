@@ -1,0 +1,82 @@
+---
+title: "Using complete.design for Experimental Design"
+author: "Wang Xianjue"
+date: "2024-12-08"
+output: rmarkdown::html_vignette
+vignette: >
+  %\\VignetteIndexEntry{Using complete.design for Experimental Design}
+  %\\VignetteEngine{knitr::rmarkdown}
+  %\\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+The `complete.design` function is an R utility designed for creating full factorial experimental designs. This vignette explains the function's purpose, parameters, and provides examples to illustrate its usage.
+
+## Function Overview
+
+### Description
+The `complete.design` function generates a complete factorial design based on the specified factors and their levels. It allows flexibility in defining factors as integers, character vectors, or complex data frames.
+
+### Key Features
+- Support for integer-based levels, character-based levels, and data frames as factors.
+- Ability to include experiment numbering.
+- Allows repetition of each combination via the `size` parameter.
+
+---
+
+## Function Usage
+complete.design(varlist, numbering = TRUE, size = 1)
+
+### Parameters
+- `varlist`: A list where each element represents a factor. It can be:
+  - A positive integer: Defines the number of levels for a factor.
+  - A vector: Specifies the exact levels for a factor.
+  - A data frame: Represents a complex factor with multiple columns.
+- `numbering`: Logical, whether to include an experiment number column (`TRUE` by default).
+- `size`: Integer, specifies the number of repetitions for each experimental combination (default = 1).
+
+### Returns
+
+A data frame containing all possible combinations of the specified factors, with optional numbering and repetitions.
+
+---
+
+## Examples
+
+### Example 1: Simple Factorial Design
+
+Create a design with three factors:
+- Factor `f1` with 3 levels.
+- Factor `f2` with two character levels: `a` and `b`.
+- Factor `f3` with 4 levels.
+
+```{r}
+design <- complete.design(list(f1 = 3, f2 = c("a", "b"), f3 = 4))
+head(design)
+```
+###Example 2: Repeated Combinations
+Repeat each combination twice:
+```{r}
+design <- complete.design(list(f1 = 3, f2 = c("a", "b"), f3 = 4), size = 2)
+head(design)
+```
+###Example 3: Complex Factor with Data Frame
+Create a factorial design where one factor (f3) is a data frame:
+```{r}
+design <- complete.design(list(
+  f1 = 3,
+  f2 = c("a", "b"),
+  f3 = data.frame(
+    fa = c(0.01, 0.05, 0.1),
+    fb = c("x", "x", "y")
+  )
+), size = 2)
+head(design)
+```
+###Error Handling
+The function automatically validates inputs. For example, providing invalid levels results in an error:
+```{r error=TRUE}
+complete.design(list(f1 = c(1, 1, 2)))
+```
+
