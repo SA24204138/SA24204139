@@ -3,7 +3,7 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 DataFrame complete_design(List varlist, bool numbering = true, int size = 1) {
-  int nf = varlist.size(); // Number of factors
+  int nf = varlist.size(); // Number of fac
   std::vector<int> nlev(nf); // Number of levels per factor
   std::vector<std::string> tf(nf); // Type of each factor ("factor" or "df")
   std::vector<CharacterVector> levels_list(nf); // Stores levels for factors
